@@ -10,6 +10,7 @@ public class TrialRunner : MonoBehaviour
     public WallTextureController wallController;
     public WallRendererCapturer wallSnapshot;
     public BackdropShaderController shader;
+    public CalibrationNotPupil calib;
 
     public Experiment[] ExperimentOptions;
     public int ExperimentChoice;
@@ -17,6 +18,12 @@ public class TrialRunner : MonoBehaviour
     public void StartTrial()
     {
         shader.SetOpaque();
+
+        if (!calib.UpdateParams())
+        {
+            Debug.LogError("Failed to update calibration parameters");
+            return;
+        }
 
         gazeRaycaster.OnRaycastSuccessful += ProcessGazePoint;
         gazeRaycaster.SetRaycastMode(ExperimentOptions[ExperimentChoice].GetRaycastMode());
@@ -38,7 +45,7 @@ public class TrialRunner : MonoBehaviour
         shader.SetTransparent();
     }
 
-    private void ProcessGazePoint(PupilLabs.GazeData gazeData, Vector2 overlayPoint, Vector2 windowPoint, float time)
+    private void ProcessGazePoint(Vector2 overlayPoint, Vector2 windowPoint, float time)
     {
         ExperimentOptions[ExperimentChoice].OnRaycastSuccessful(overlayPoint, windowPoint);
         ExperimentOptions[ExperimentChoice].LogDataPoint(windowPoint, time);

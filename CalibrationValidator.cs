@@ -189,14 +189,14 @@ public class CalibrationValidator : MonoBehaviour
     private int remainingSamples = 0;
     public GameObject testGazeObject;
     
-    private void OnGazeDataRecieved(PupilLabs.GazeData gazeData, Vector2 o, Vector2 point, float time)
+    private void OnGazeDataRecieved(Vector2 o, Vector2 point, float time)
     {
         Vector3 gazeDir = vrCam.transform.InverseTransformDirection(testGazeObject.transform.position - vrCam.transform.position).normalized;
         if (remainingSamples > 0)
         {
             Vector3 target = vrCam.transform.localToWorldMatrix.MultiplyPoint(currLocalTargetPos) - vrCam.transform.position;
             if (!debugGazeDir) {
-                gazeDir = gazeData.GazeDirection;
+                //gazeDir = gazeData.GazeDirection;
             } else
             {
                 ShowDebugGazeLine(gazeDir);

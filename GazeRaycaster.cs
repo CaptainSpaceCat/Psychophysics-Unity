@@ -6,7 +6,8 @@ using UnityEngine;
 public class GazeRaycaster : MonoBehaviour
 {
     public BackdropShaderController shader;
-    public PupilLabs.GazeController gazeController;
+    public PupilDataParser gazeParser;
+    public CalibrationNotPupil calib;
     public Camera vrCam;
     public SystemTime sysTime;
     
@@ -27,9 +28,11 @@ public class GazeRaycaster : MonoBehaviour
     public float filterBeta = 0.0f;
     public float filterDcutoff = 1.0f;
 
-    public event Action<PupilLabs.GazeData, Vector2, Vector2, float> OnRaycastSuccessful;
+    public event Action<Vector2, Vector2, float> OnRaycastSuccessful;
 
     private int raycastMode = 0;
+
+    public int eyeChoice = 0;
 
     
     void Awake()
@@ -37,7 +40,7 @@ public class GazeRaycaster : MonoBehaviour
         gazeFilter = new OneEuroFilter<Vector3>(filterFrequency);
 
         // set event listeners
-        gazeController.OnReceive3dGaze += ConsumeGazeData;
+        gazeParser.OnDataParsed += ConsumeGazeData;
     }
 
     private float prevDataTimestamp;
@@ -64,14 +67,14 @@ public class GazeRaycaster : MonoBehaviour
     }
 
     private float prevFilterTime = 0;
-    public void ConsumeGazeData(PupilLabs.GazeData gazeData)
+    public void ConsumeGazeData(int eyeidx, double timestamp, float confidence, Vector2 ellipseCenter)
     {
         if (raycastMode == 0)
         {
             return;
         }
 
-        if (!debugGazeDir && gazeData.Confidence < confidenceThreshold)
+        if (!debugGazeDir && confidence < confidenceThreshold)
         {
             // if we aren't debugging and aren't confident in where the user is looking,
             // just shut the window entirely to prevent cheating
@@ -80,19 +83,29 @@ public class GazeRaycaster : MonoBehaviour
             return;
         }
 
+        Vector3 gazeDirection = CenterPosToGazeDir(calib.LinearTransform(ellipseCenter));
+
         if (raycastMode == 1)
         {
-            FollowMode(gazeData);
+            FollowMode(gazeDirection);
         } else if (raycastMode == 2)
         {
-            LockedMode(gazeData);
+            //LockedMode(gazeDirection);
+            Debug.LogError("Locked mode currently under construction. Why are you even using this?");
         }
     }
 
-    private void FollowMode(PupilLabs.GazeData gazeData)
+    private Vector3 CenterPosToGazeDir(Vector2 centerPos)
     {
-        sysTime.Log(gazeData.PupilTimestamp.ToString() + "-recieved");
-        Debug.Log(gazeData.GazeDirection);
+        Vector3 target = new Vector3(centerPos.x, centerPos.y, 2); //TODO make this 2 not hardcoded, its based on the distance from the camera to the blocking plane
+        Vector3 world = target - vrCam.transform.position;
+        return vrCam.transform.InverseTransformDirection(world);
+    }
+
+    private void FollowMode(Vector3 rawGazeDir)
+    {
+        //sysTime.Log(gazeData.PupilTimestamp.ToString() + "-recieved");
+        //Debug.Log(gazeData.GazeDirection);
         float filterDeltaTime = Time.time - prevFilterTime;
         if (prevFilterTime > 0)
         {
@@ -101,7 +114,6 @@ public class GazeRaycaster : MonoBehaviour
         }
 
         // Calculate the correct raycast vector based on gaze direction, eccentricity, and filter/debug status
-        Vector3 rawGazeDir = gazeData.GazeDirection;
         if (debugGazeDir)
         {
             rawGazeDir = testGazeDir;
@@ -146,15 +158,15 @@ public class GazeRaycaster : MonoBehaviour
                 oHit = overlayHit.collider.transform.InverseTransformPoint(overlayHit.point);
             }
             Vector3 wHit = windowHit.collider.transform.InverseTransformPoint(windowHit.point);
-            OnRaycastSuccessful(gazeData, new Vector2(oHit.x, oHit.z), new Vector2(wHit.x, wHit.y), Time.time);
+            OnRaycastSuccessful(new Vector2(oHit.x, oHit.z), new Vector2(wHit.x, wHit.y), Time.time);
         }
         prevDataTimestamp = Time.time;
         shader.Rerender(backdropHitTL.textureCoord, backdropHitBR.textureCoord, dotCoords);
-        sysTime.Log(gazeData.PupilTimestamp.ToString() + "-shaded");
+        //sysTime.Log(gazeData.PupilTimestamp.ToString() + "-shaded");
         prevFilterTime = Time.time;
     }
 
-
+    /*
     [Range(.99f, 1f)]
     public float gazeDeviationThreshold = 0.92f;
     private void LockedMode(PupilLabs.GazeData gazeData)
@@ -202,6 +214,7 @@ public class GazeRaycaster : MonoBehaviour
         shader.Rerender(backdropHitTL.textureCoord, backdropHitBR.textureCoord, dotHit.textureCoord);
         OnRaycastSuccessful(gazeData, Vector2.zero, windowHit.collider.transform.InverseTransformPoint(windowHit.point), Time.time);
     }
+    */
 }
 
 

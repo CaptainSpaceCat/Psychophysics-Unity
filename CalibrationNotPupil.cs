@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using UnityEngine;
 
 public class CalibrationNotPupil : MonoBehaviour
@@ -7,52 +8,48 @@ public class CalibrationNotPupil : MonoBehaviour
     public PupilLabs.CalibrationSettings settings;
     public PupilLabs.CalibrationTargets targets;
     public MarkerVisualizer marker;
-
-    public PupilLabs.SubscriptionsController subsCtrl;
-    private PupilLabs.PupilListener listener;
+    public PupilDataParser parser;
 
     private bool isCalibrating = false;
     private Vector2 currentEyePosition;
     private bool eyeAvailable = false;
-    public float kMinConfidence = 0.6f;
+    public float kMinConfidence = 0.65f;
     public int kChosenEye = 0;
 
-    void OnEnable()
+    public Vector4 coefficient;
+    public Vector2 intercept;
+
+    void Awake()
     {
-        if (listener == null)
-        {
-            listener = new PupilLabs.PupilListener(subsCtrl);
-        }
-
-        listener.Enable();
-        listener.OnReceivePupilData += ReceivePupilData;
-
         currentEyePosition = Vector2.zero;
     }
 
-    void OnDisable()
+    public bool UpdateParams()
     {
-        listener.Disable();
-        listener.OnReceivePupilData -= ReceivePupilData;
+        StreamReader reader = new StreamReader("C:\\Users\\chich\\Desktop\\mapping_params.txt");
+        float w = float.Parse(reader.ReadLine());
+        float y = float.Parse(reader.ReadLine());
+        float x = float.Parse(reader.ReadLine());
+        float z = float.Parse(reader.ReadLine());
+        float ix = float.Parse(reader.ReadLine());
+        float iy = float.Parse(reader.ReadLine());
+
+        coefficient = new Vector4(w, x, y, z);
+        intercept = new Vector2(ix, iy);
+        return true;
     }
 
-
-    private void ReceivePupilData(Dictionary<string, object> dictionary)
+    private void ReceivePupilData(int eyeidx, double timestamp, float confidence, Vector2 ellipseCenter)
     {
-        int eyeidx = System.Int32.Parse(PupilLabs.Helpers.StringFromDictionary(dictionary, "id"));
         if (eyeidx == kChosenEye)
         {
-            float confidence = PupilLabs.Helpers.FloatFromDictionary(dictionary, "confidence");
             if (confidence < kMinConfidence)
             {
                 eyeAvailable = false;
                 return;
             }
+            currentEyePosition = ellipseCenter;
             eyeAvailable = true;
-            //double PupilTimestamp = PupilLabs.Helpers.DoubleFromDictionary(dictionary, "timestamp");
-            Dictionary<object, object> subDic = PupilLabs.Helpers.DictionaryFromDictionary(dictionary, "ellipse");
-            Vector3 ellipseCenter = PupilLabs.Helpers.ObjectToVector(subDic["center"]);
-            currentEyePosition = WorldToDataPos(ellipseCenter);
         }
     }
 
@@ -60,6 +57,7 @@ public class CalibrationNotPupil : MonoBehaviour
     {
         if (!isCalibrating)
         {
+            parser.OnDataParsed += ReceivePupilData;
             StartCoroutine(CalibrationRoutine());
         }
     }
@@ -108,6 +106,14 @@ public class CalibrationNotPupil : MonoBehaviour
         }
         UpdateMarker(-1, false);
         DataLogger.Close();
+        parser.OnDataParsed -= ReceivePupilData;
         isCalibrating = false;
+    }
+
+    public Vector2 LinearTransform(Vector2 pos)
+    {
+        float x = pos.x * coefficient.w + pos.y * coefficient.y;
+        float y = pos.x * coefficient.x + pos.y * coefficient.z;
+        return new Vector2(x, y) + intercept;
     }
 }
