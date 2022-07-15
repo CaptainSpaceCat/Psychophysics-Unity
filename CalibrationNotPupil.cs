@@ -27,14 +27,14 @@ public class CalibrationNotPupil : MonoBehaviour
     public bool UpdateParams()
     {
         StreamReader reader = new StreamReader("C:\\Users\\chich\\Desktop\\mapping_params.txt");
-        float w = float.Parse(reader.ReadLine());
-        float y = float.Parse(reader.ReadLine());
         float x = float.Parse(reader.ReadLine());
+        float y = float.Parse(reader.ReadLine());
         float z = float.Parse(reader.ReadLine());
+        float w = float.Parse(reader.ReadLine());
         float ix = float.Parse(reader.ReadLine());
         float iy = float.Parse(reader.ReadLine());
 
-        coefficient = new Vector4(w, x, y, z);
+        coefficient = new Vector4(x, y, z, w);
         intercept = new Vector2(ix, iy);
         return true;
     }
@@ -112,8 +112,8 @@ public class CalibrationNotPupil : MonoBehaviour
 
     public Vector2 LinearTransform(Vector2 pos)
     {
-        float x = pos.x * coefficient.w + pos.y * coefficient.y;
-        float y = pos.x * coefficient.x + pos.y * coefficient.z;
+        float x = pos.x * coefficient.x + pos.y * coefficient.y;
+        float y = pos.x * coefficient.z + pos.y * coefficient.w;
         return new Vector2(x, y) + intercept;
     }
 }

@@ -32,8 +32,6 @@ public class GazeRaycaster : MonoBehaviour
 
     private int raycastMode = 0;
 
-    public int eyeChoice = 0;
-
     
     void Awake()
     {
@@ -67,9 +65,10 @@ public class GazeRaycaster : MonoBehaviour
     }
 
     private float prevFilterTime = 0;
+    public int kChosenEye = 0;
     public void ConsumeGazeData(int eyeidx, double timestamp, float confidence, Vector2 ellipseCenter)
     {
-        if (raycastMode == 0)
+        if (raycastMode == 0 || eyeidx != kChosenEye)
         {
             return;
         }
@@ -82,7 +81,6 @@ public class GazeRaycaster : MonoBehaviour
             shader.ShutWindow();
             return;
         }
-
         Vector3 gazeDirection = CenterPosToGazeDir(calib.LinearTransform(ellipseCenter));
 
         if (raycastMode == 1)
@@ -97,15 +95,12 @@ public class GazeRaycaster : MonoBehaviour
 
     private Vector3 CenterPosToGazeDir(Vector2 centerPos)
     {
-        Vector3 target = new Vector3(centerPos.x, centerPos.y, 2); //TODO make this 2 not hardcoded, its based on the distance from the camera to the blocking plane
-        Vector3 world = target - vrCam.transform.position;
-        return vrCam.transform.InverseTransformDirection(world);
+        return new Vector3(centerPos.x, centerPos.y, 2); //TODO make this 2 not hardcoded, its based on the distance from the camera to the blocking plane
     }
 
     private void FollowMode(Vector3 rawGazeDir)
     {
         //sysTime.Log(gazeData.PupilTimestamp.ToString() + "-recieved");
-        //Debug.Log(gazeData.GazeDirection);
         float filterDeltaTime = Time.time - prevFilterTime;
         if (prevFilterTime > 0)
         {

@@ -15,6 +15,7 @@ public class ExperimentControlFlow : MonoBehaviour
     public ResearcherDisplayController researchController;
     public GameObject testingRoom;
     public Camera vrCam;
+    public GameObject statusText;
     public FrameVisualizer eyeFrame;
 
     //flags
@@ -60,6 +61,11 @@ public class ExperimentControlFlow : MonoBehaviour
     public void OnAnyTask()
     {
         researchController.ClearInfographics();
+
+
+        eyeFrame.gameObject.SetActive(true);
+        ToggleShowEyes();
+        statusText.SetActive(false);
         //calibrationPlane.SetActive(false);
     }
 

@@ -34,7 +34,7 @@ public class PupilDataParser : MonoBehaviour
         float confidence = PupilLabs.Helpers.FloatFromDictionary(dictionary, "confidence");
         Dictionary<object, object> subDic = PupilLabs.Helpers.DictionaryFromDictionary(dictionary, "ellipse");
         Vector2 ellipseCenter = WorldToDataPos(PupilLabs.Helpers.ObjectToVector(subDic["center"]));
-
+        
         OnDataParsed(eyeidx, pupilTimestamp, confidence, ellipseCenter);
     }
 }
