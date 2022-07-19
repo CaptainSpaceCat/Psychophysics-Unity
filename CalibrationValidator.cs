@@ -14,7 +14,8 @@ public class CalibrationValidator : MonoBehaviour
     public GazeRaycaster gazeRaycaster;
     public GameObject debugCube;
     public ResearcherDisplayController researchDisplay;
-    public PupilLabs.CalibrationController calibrationController;
+    //public PupilLabs.CalibrationController calibrationController;
+    public CalibrationNotPupil calibNotPupil;
     public bool cheapMode = false;
     public bool debugGazeDir = false;
     public bool debugGazePoint = false;
@@ -35,8 +36,8 @@ public class CalibrationValidator : MonoBehaviour
     {
         vrCam = Camera.main;
 
-        settings = calibrationController.settings;
-        targets = calibrationController.targets;
+        settings = calibNotPupil.settings;
+        targets = calibNotPupil.targets;
     }
     
     private void Update()

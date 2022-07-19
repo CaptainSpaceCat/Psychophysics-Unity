@@ -32,7 +32,6 @@ public class GazeRaycaster : MonoBehaviour
 
     private int raycastMode = 0;
 
-    
     void Awake()
     {
         gazeFilter = new OneEuroFilter<Vector3>(filterFrequency);
@@ -45,6 +44,11 @@ public class GazeRaycaster : MonoBehaviour
     public float dataTimeThreshold = 0.017f;
     private void Update()
     {
+        if (debugGazeDir)
+        {
+            ConsumeGazeData(kChosenEye, 0, 1, Vector2.zero);
+        }
+
         if (raycastMode > 0)
         {
             // "lag spike" fix
@@ -82,6 +86,10 @@ public class GazeRaycaster : MonoBehaviour
             return;
         }
         Vector3 gazeDirection = CenterPosToGazeDir(calib.LinearTransform(ellipseCenter));
+        if (debugGazeDir)
+        {
+            gazeDirection = testGazeDir;
+        }
 
         if (raycastMode == 1)
         {
@@ -109,10 +117,7 @@ public class GazeRaycaster : MonoBehaviour
         }
 
         // Calculate the correct raycast vector based on gaze direction, eccentricity, and filter/debug status
-        if (debugGazeDir)
-        {
-            rawGazeDir = testGazeDir;
-        }
+        
         Vector3 gazeDir = rawGazeDir;
         if (filterOn)
         {

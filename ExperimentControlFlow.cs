@@ -29,6 +29,7 @@ public class ExperimentControlFlow : MonoBehaviour
     public Button validationButton;
     public Button trialButton;
     public Button cancelButton;
+    public Button greenTextButton;
     public Button vrViewButton;
     public Button vrHeadLockButton;
     public Button dashboardViewButton;
@@ -48,11 +49,16 @@ public class ExperimentControlFlow : MonoBehaviour
     void Awake()
     {
         // set event listeners
+        /*
         calibrator.OnCalibrationStarted += OnCalibrationStarted;
         calibrator.OnCalibrationSucceeded += OnCalibrationSucceeded;
         calibrator.OnCalibrationFailed += OnCalibrationFailed;
+        */
+        calibNotPupil.OnCalibrationSucceeded += OnCalibrationSucceeded;
+        calibNotPupil.OnCalibrationStarted += OnCalibrationStarted;
 
-        validator.OnValidationCompleted += OnValidationCompleted;
+        //validator.OnValidationCompleted += OnValidationCompleted;
+        calibNotPupil.OnValidationCompleted += OnValidationCompleted;
 
         //initialize new block
         NextBlock();
@@ -105,7 +111,8 @@ public class ExperimentControlFlow : MonoBehaviour
     {
         OnAnyTask();
         controlState = ExperimentalControlState.Validating;
-        validator.StartValidation();
+        //validator.StartValidation();
+        calibNotPupil.StartValidation();
 
         calibrationButton.interactable = false;
         validationButton.interactable = false;
@@ -163,13 +170,15 @@ public class ExperimentControlFlow : MonoBehaviour
         switch (controlState)
         {
             case ExperimentalControlState.Calibrating:
-                calibrator.ToggleCalibration();
+                //calibrator.ToggleCalibration();
+                calibNotPupil.CancelCalibration();
                 break;
             case ExperimentalControlState.Testing:
                 trialRunner.StopTrial();
                 break;
             case ExperimentalControlState.Validating:
-                validator.CancelValidation();
+                //validator.CancelValidation();
+                calibNotPupil.CancelValidation();
                 break;
         }
 
@@ -179,6 +188,7 @@ public class ExperimentControlFlow : MonoBehaviour
         validationButton.interactable = calibrationExists;
         trialButton.interactable = calibrationExists;
         cancelButton.interactable = false;
+        greenTextButton.interactable = false;
     }
 
     public void Debug()
@@ -187,6 +197,7 @@ public class ExperimentControlFlow : MonoBehaviour
         validationButton.interactable = true;
         trialButton.interactable = true;
         cancelButton.interactable = true;
+        greenTextButton.interactable = true;
     }
 
 
@@ -209,6 +220,7 @@ public class ExperimentControlFlow : MonoBehaviour
         validationButton.interactable = true;
         trialButton.interactable = true;
         cancelButton.interactable = false;
+        greenTextButton.interactable = true;
     }
 
     public void OnCalibrationFailed()

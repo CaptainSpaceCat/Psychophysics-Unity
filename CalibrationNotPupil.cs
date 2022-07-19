@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
@@ -18,6 +19,12 @@ public class CalibrationNotPupil : MonoBehaviour
 
     public Vector4 coefficient;
     public Vector2 intercept;
+
+    public event Action OnCalibrationStarted;
+    public event Action OnCalibrationSucceeded;
+    public event Action OnValidationCompleted;
+    private Coroutine calibRoutine;
+    private Coroutine validRoutine;
 
     void Awake()
     {
@@ -57,8 +64,22 @@ public class CalibrationNotPupil : MonoBehaviour
     {
         if (!isCalibrating)
         {
+            OnCalibrationStarted();
             parser.OnDataParsed += ReceivePupilData;
-            StartCoroutine(CalibrationRoutine());
+            calibRoutine = StartCoroutine(CalibrationRoutine());
+        }
+    }
+
+    public void StartValidation()
+    {
+        if (!isCalibrating)
+        {
+            if (UpdateParams())
+            {
+                //OnCalibrationStarted();
+                parser.OnDataParsed += ReceivePupilData;
+                validRoutine = StartCoroutine(ValidationRoutine());
+            }
         }
     }
 
@@ -108,6 +129,54 @@ public class CalibrationNotPupil : MonoBehaviour
         DataLogger.Close();
         parser.OnDataParsed -= ReceivePupilData;
         isCalibrating = false;
+        OnCalibrationSucceeded();
+    }
+
+    private IEnumerator ValidationRoutine()
+    {
+        isCalibrating = true;
+        DataLogger.NextValidation();
+        for (int i = 0; i < targets.GetTargetCount(); i++)
+        {
+            Vector2 runningSampleAvg = Vector2.zero;
+            int runningSampleCount = 0;
+
+            UpdateMarker(i, false);
+            yield return new WaitForSeconds(settings.ignoreInitialSeconds);
+            UpdateMarker(i, true);
+            for (int n = 0; n < settings.samplesPerTarget; n++)
+            {
+                if (eyeAvailable)
+                {
+                    runningSampleAvg += LinearTransform(currentEyePosition) - WorldToDataPos(marker.transform.localPosition);
+                    runningSampleCount += 1;
+                }
+                else
+                {
+                    n--;
+                }
+                yield return new WaitForSeconds(1f / settings.SampleRate);
+            }
+
+            DataLogger.LogValidationPoint(WorldToDataPos(marker.transform.localPosition), runningSampleAvg / runningSampleCount);
+        }
+        UpdateMarker(-1, false);
+        DataLogger.Close();
+        parser.OnDataParsed -= ReceivePupilData;
+        isCalibrating = false;
+        OnValidationCompleted();
+    }
+
+    public void CancelCalibration()
+    {
+        StopCoroutine(calibRoutine);
+        UpdateMarker(-1, false);
+    }
+
+    public void CancelValidation()
+    {
+        StopCoroutine(validRoutine);
+        UpdateMarker(-1, false);
     }
 
     public Vector2 LinearTransform(Vector2 pos)
