@@ -12,20 +12,29 @@ public class GreenLetterTest : MonoBehaviour
     public TextMeshProUGUI greenText;
     public Text buttonText;
 
-    private string[] words =
+    /*private string[] words =
     {
         "STAR",
         "RATS",
         "FART",
         "LOUD",
-        "POOP",
+        "NOON",
         "DING",
         "FORK",
-        "PORK",
+        "LARD",
         "AGES",
         "FLYS",
-        "POUT"
-    };
+        "POUT",
+        "WORD",
+        "EARS",
+        "CORE",
+        "APPS",
+        "KING",
+        "DRIP",
+        "SASH",
+        "WAIT"
+    };*/
+    private string[] words = { "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z" };
 
     private int wordIdx = -1;
     public void RandomizeText()
