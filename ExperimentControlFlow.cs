@@ -30,6 +30,7 @@ public class ExperimentControlFlow : MonoBehaviour
     public Button trialButton;
     public Button cancelButton;
     public Button greenTextButton;
+    public Button noiseButton;
     public Button vrViewButton;
     public Button vrHeadLockButton;
     public Button dashboardViewButton;
@@ -105,6 +106,8 @@ public class ExperimentControlFlow : MonoBehaviour
         validationButton.interactable = false;
         trialButton.interactable = true;
         cancelButton.interactable = true;
+        greenTextButton.interactable = true;
+        noiseButton.interactable = true;
     }
 
     public void Validate()
@@ -189,6 +192,8 @@ public class ExperimentControlFlow : MonoBehaviour
         trialButton.interactable = calibrationExists;
         cancelButton.interactable = false;
         greenTextButton.interactable = false;
+        noiseButton.interactable = false;
+
     }
 
     public void Debug()
@@ -198,6 +203,8 @@ public class ExperimentControlFlow : MonoBehaviour
         trialButton.interactable = true;
         cancelButton.interactable = true;
         greenTextButton.interactable = true;
+        noiseButton.interactable = true;
+
     }
 
 

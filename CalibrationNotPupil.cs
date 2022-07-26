@@ -11,6 +11,8 @@ public class CalibrationNotPupil : MonoBehaviour
     public MarkerVisualizer marker;
     public PupilDataParser parser;
 
+    public NetworkingClient dataSender;
+
     private bool isCalibrating = false;
     private Vector2 currentEyePosition;
     private bool eyeAvailable = false;
@@ -26,9 +28,21 @@ public class CalibrationNotPupil : MonoBehaviour
     private Coroutine calibRoutine;
     private Coroutine validRoutine;
 
+    private List<Vector4> dataPoints;
+
     void Awake()
     {
         currentEyePosition = Vector2.zero;
+        dataPoints = new List<Vector4>();
+        dataSender.OnCalibrationPointProcessed += LastPointCallback;
+    }
+
+    private bool lastPointResultReady = false;
+    private bool lastPointAccepted;
+    private void LastPointCallback(bool result)
+    {
+        lastPointAccepted = result;
+        lastPointResultReady = true;
     }
 
     public bool UpdateParams()
@@ -99,15 +113,27 @@ public class CalibrationNotPupil : MonoBehaviour
         return new Vector2(pos.x, pos.y);
     }
 
+    
     private void TakeSample()
     {
-        DataLogger.LogValidationPoint(WorldToDataPos(marker.transform.localPosition), currentEyePosition);
+        //DataLogger.LogValidationPoint(WorldToDataPos(marker.transform.localPosition), currentEyePosition);
+        Vector2 markerPos = WorldToDataPos(marker.transform.localPosition);
+        Vector4 collated = new Vector4(
+            markerPos.x,
+            markerPos.y,
+            currentEyePosition.x,
+            currentEyePosition.y
+            );
+
+        /*dataPoints.Add();*/
+        dataSender.SendData(collated);
     }
 
     private IEnumerator CalibrationRoutine()
     {
         isCalibrating = true;
         DataLogger.NextCalibration();
+        dataPoints.Clear();
         for (int i = 0; i < targets.GetTargetCount(); i++)
         {
             UpdateMarker(i, false);
@@ -115,10 +141,16 @@ public class CalibrationNotPupil : MonoBehaviour
             UpdateMarker(i, true);
             for (int n = 0; n < settings.samplesPerTarget; n++)
             {
-                if (eyeAvailable)
+                float start = Time.time;
+                TakeSample();
+                while (!lastPointResultReady)
                 {
-                    TakeSample();
-                } else
+                    yield return null;
+                }
+                float timeTaken = Time.time - start;
+                Debug.Log("> Network time taken: " + timeTaken.ToString());
+                lastPointResultReady = false;
+                if (!lastPointAccepted)
                 {
                     n--;
                 }
