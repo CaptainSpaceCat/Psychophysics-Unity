@@ -6,7 +6,7 @@ using UnityEngine.UI;
 
 public class ExperimentControlFlow : MonoBehaviour
 {
-    
+
     //object references
     public CalibrationController calibrator;
     public CalibrationNotPupil calibNotPupil;
@@ -30,6 +30,7 @@ public class ExperimentControlFlow : MonoBehaviour
     public Button trialButton;
     public Button cancelButton;
     public Button greenTextButton;
+    public Button noiseButton;
     public Button vrViewButton;
     public Button vrHeadLockButton;
     public Button dashboardViewButton;
@@ -105,6 +106,8 @@ public class ExperimentControlFlow : MonoBehaviour
         validationButton.interactable = false;
         trialButton.interactable = true;
         cancelButton.interactable = true;
+        greenTextButton.interactable = true;
+        noiseButton.interactable = true;
     }
 
     public void Validate()
@@ -154,7 +157,9 @@ public class ExperimentControlFlow : MonoBehaviour
         if (eyeFrame.gameObject.activeSelf)
         {
             eyeFrameButton.GetComponentInChildren<Text>().text = "Hide Eye Frames";
-        } else {
+        }
+        else
+        {
             eyeFrameButton.GetComponentInChildren<Text>().text = "Show Eye Frames";
         }
     }
@@ -189,6 +194,8 @@ public class ExperimentControlFlow : MonoBehaviour
         trialButton.interactable = calibrationExists;
         cancelButton.interactable = false;
         greenTextButton.interactable = false;
+        noiseButton.interactable = false;
+
     }
 
     public void Debug()
@@ -198,6 +205,8 @@ public class ExperimentControlFlow : MonoBehaviour
         trialButton.interactable = true;
         cancelButton.interactable = true;
         greenTextButton.interactable = true;
+        noiseButton.interactable = true;
+
     }
 
 

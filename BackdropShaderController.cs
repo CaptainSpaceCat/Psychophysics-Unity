@@ -6,9 +6,11 @@ public class BackdropShaderController : MonoBehaviour
 {
 
     Material shaderMat;
-    private float[] spool = new float[256];
+    private float[] spool = new float[1024];
     public float noiseDelay = 0.01f;
     private Coroutine noiseRoutine;
+    private bool noiseRoutineRunning = false;
+    private bool noiseActive = false;
 
     private void Awake()
     {
@@ -21,6 +23,7 @@ public class BackdropShaderController : MonoBehaviour
 
     private IEnumerator NoiseGrid()
     {
+        noiseRoutineRunning = true;
         while (true)
         {
             RandomizeSpool();
@@ -47,28 +50,56 @@ public class BackdropShaderController : MonoBehaviour
         shaderMat.SetFloat("_DotCenterY", dotCoords.y);
     }
 
+    public void ToggleNoiseActive()
+    {
+        if (noiseActive)
+        {
+            SetNoiseActive(false);
+        }
+        else
+        {
+            SetNoiseActive(true);
+        }
+    }
+
+    public void SetNoiseActive(bool state)
+    {
+        if (state)
+        {
+            shaderMat.SetFloat("_NoiseSize", 0.088f);
+            if (!noiseRoutineRunning)
+            {
+                noiseRoutine = StartCoroutine(NoiseGrid());
+            }
+        }
+        else
+        {
+            shaderMat.SetFloat("_NoiseSize", 0f);
+            if (noiseRoutineRunning)
+            {
+                StopCoroutine(noiseRoutine);
+                noiseRoutineRunning = false;
+            }
+        }
+        noiseActive = state;
+    }
+
     public void SetOpaque()
     {
         shaderMat.SetInt("_Transparency", 0);
-        if (noiseRoutine != null)
-        {
-            StopCoroutine(noiseRoutine);
-        }
+        SetNoiseActive(false);
     }
 
     public void SetWindow()
     {
         shaderMat.SetInt("_Transparency", 1);
-        noiseRoutine = StartCoroutine(NoiseGrid());
+        //SetNoiseActive(true);
     }
 
     public void SetTransparent()
     {
         shaderMat.SetInt("_Transparency", 2);
-        if (noiseRoutine != null)
-        {
-            StopCoroutine(noiseRoutine);
-        }
+        SetNoiseActive(false);
     }
 
     public void ShutWindow()
