@@ -20,7 +20,7 @@ public class NetworkingClient : MonoBehaviour
         _sender.Stop();
     }
 
-    public void SendData(Vector4 data)
+    public void SendData(string data)
     {
         _sender.SendData(data);
     }

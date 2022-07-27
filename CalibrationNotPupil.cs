@@ -118,15 +118,7 @@ public class CalibrationNotPupil : MonoBehaviour
     {
         //DataLogger.LogValidationPoint(WorldToDataPos(marker.transform.localPosition), currentEyePosition);
         Vector2 markerPos = WorldToDataPos(marker.transform.localPosition);
-        Vector4 collated = new Vector4(
-            markerPos.x,
-            markerPos.y,
-            currentEyePosition.x,
-            currentEyePosition.y
-            );
-
-        /*dataPoints.Add();*/
-        dataSender.SendData(collated);
+        dataSender.SendData(markerPos.ToString("F5"));
     }
 
     private IEnumerator CalibrationRoutine()
@@ -157,6 +149,7 @@ public class CalibrationNotPupil : MonoBehaviour
                 yield return new WaitForSeconds(1f / settings.SampleRate);
             }
         }
+        dataSender.SendData("EOF");
         UpdateMarker(-1, false);
         DataLogger.Close();
         parser.OnDataParsed -= ReceivePupilData;

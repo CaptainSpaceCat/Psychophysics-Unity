@@ -65,8 +65,8 @@ public class DataSender : RunAbleThread
     }
 
     private Queue<string> dataQueue;
-    public void SendData(Vector4 data)
+    public void SendData(string data)
     {
-        dataQueue.Enqueue(data.ToString());
+        dataQueue.Enqueue(data);
     }
 }
