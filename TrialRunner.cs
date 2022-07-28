@@ -11,12 +11,14 @@ public class TrialRunner : MonoBehaviour
     public WallRendererCapturer wallSnapshot;
     public BackdropShaderController shader;
     public CalibrationNotPupil calib;
+    public NetworkingClient netClient;
 
     public Experiment[] ExperimentOptions;
     public int ExperimentChoice;
 
     public void StartTrial()
     {
+        netClient.StartStreamingGaze();
         shader.SetOpaque();
 
         if (!calib.UpdateParams())

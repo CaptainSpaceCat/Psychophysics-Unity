@@ -11,7 +11,7 @@ public class CalibrationNotPupil : MonoBehaviour
     public MarkerVisualizer marker;
     public PupilDataParser parser;
 
-    public NetworkingClient dataSender;
+    public NetworkingClient netClient;
 
     private bool isCalibrating = false;
     private Vector2 currentEyePosition;
@@ -34,7 +34,7 @@ public class CalibrationNotPupil : MonoBehaviour
     {
         currentEyePosition = Vector2.zero;
         dataPoints = new List<Vector4>();
-        dataSender.OnCalibrationPointProcessed += LastPointCallback;
+        netClient.OnCalibrationPointProcessed += LastPointCallback;
     }
 
     private bool lastPointResultReady = false;
@@ -78,6 +78,7 @@ public class CalibrationNotPupil : MonoBehaviour
     {
         if (!isCalibrating)
         {
+            netClient.StartCalibration();
             OnCalibrationStarted();
             parser.OnDataParsed += ReceivePupilData;
             calibRoutine = StartCoroutine(CalibrationRoutine());
@@ -118,7 +119,7 @@ public class CalibrationNotPupil : MonoBehaviour
     {
         //DataLogger.LogValidationPoint(WorldToDataPos(marker.transform.localPosition), currentEyePosition);
         Vector2 markerPos = WorldToDataPos(marker.transform.localPosition);
-        dataSender.SendData(markerPos.ToString("F5"));
+        netClient.SendData(markerPos.ToString("F5"));
     }
 
     private IEnumerator CalibrationRoutine()
@@ -149,7 +150,7 @@ public class CalibrationNotPupil : MonoBehaviour
                 yield return new WaitForSeconds(1f / settings.SampleRate);
             }
         }
-        dataSender.SendData("EOF");
+        netClient.SendData("EOF");
         UpdateMarker(-1, false);
         DataLogger.Close();
         parser.OnDataParsed -= ReceivePupilData;

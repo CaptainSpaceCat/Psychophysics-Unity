@@ -12,6 +12,7 @@ public class DataSender : RunAbleThread
 
     public event Action<PupilData> OnPupilDataRecieved;
     public event Action<bool> OnCalibrationPointProcessed;
+    public event Action OnEOF;
     /// <summary>
     ///     Request Hello message to server and receive message back. Do it 10 times.
     ///     Stop requesting when Running=false.
@@ -30,7 +31,13 @@ public class DataSender : RunAbleThread
                     string msg_out = dataQueue.Dequeue();
                     Debug.Log("Sending message " + msg_out);
                     client.SendFrame(msg_out);
-                    OnCalibrationPointProcessed(WaitForResponse(client));
+                    if (msg_out == "EOF")
+                    {
+                        OnEOF();
+                    } else
+                    {
+                        OnCalibrationPointProcessed(WaitForResponse(client));
+                    }
                 }
 
                 /*string msg_in = null;

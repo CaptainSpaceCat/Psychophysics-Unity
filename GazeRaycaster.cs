@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Threading;
 using UnityEngine;
 
 public class GazeRaycaster : MonoBehaviour
@@ -8,6 +9,7 @@ public class GazeRaycaster : MonoBehaviour
     public BackdropShaderController shader;
     public PupilDataParser gazeParser;
     public CalibrationNotPupil calib;
+    public NetworkingClient netClient;
     public Camera vrCam;
     public SystemTime sysTime;
     
@@ -37,7 +39,8 @@ public class GazeRaycaster : MonoBehaviour
         gazeFilter = new OneEuroFilter<Vector3>(filterFrequency);
 
         // set event listeners
-        gazeParser.OnDataParsed += ConsumeGazeData;
+        netClient.OnGazeDataReceived += ConsumeGazeData;
+        savedMut = new Mutex();
     }
 
     private float prevDataTimestamp;
@@ -46,7 +49,7 @@ public class GazeRaycaster : MonoBehaviour
     {
         if (debugGazeDir)
         {
-            ConsumeGazeData(kChosenEye, 0, 1, Vector2.zero);
+            CalculateWindowPos(Vector2.zero, 1);
         }
 
         if (raycastMode > 0)
@@ -61,6 +64,13 @@ public class GazeRaycaster : MonoBehaviour
                 shader.ShutWindow();
             }
         }
+
+        if (gazeAvailable)
+        {
+            savedMut.WaitOne();
+            CalculateWindowPos(savedCenter, savedConfidence);
+            savedMut.ReleaseMutex();
+        }
     }
 
     public void SetRaycastMode(int mode)
@@ -68,11 +78,30 @@ public class GazeRaycaster : MonoBehaviour
         raycastMode = mode;
     }
 
+    private bool gazeAvailable = false;
+    private Vector2 savedCenter;
+    private float savedConfidence;
+    private Mutex savedMut;
+    public GameObject dummytest;
+    public void ConsumeGazeData(Vector2 center, float confidence)
+    {
+        dummytest.transform.localPosition = new Vector3(center.x + 1f, center.y, 2);
+        //CalculateWindowPos(center, confidence);
+
+        /*
+        savedMut.WaitOne();
+        savedCenter = center;
+        savedConfidence = confidence;
+        gazeAvailable = true;
+        savedMut.ReleaseMutex();
+        */
+    }
+
     private float prevFilterTime = 0;
     public int kChosenEye = 0;
-    public void ConsumeGazeData(int eyeidx, double timestamp, float confidence, Vector2 ellipseCenter)
+    public void CalculateWindowPos(Vector2 center, float confidence)
     {
-        if (raycastMode == 0 || eyeidx != kChosenEye)
+        if (raycastMode == 0)// || eyeidx != kChosenEye)
         {
             return;
         }
@@ -85,7 +114,7 @@ public class GazeRaycaster : MonoBehaviour
             shader.ShutWindow();
             return;
         }
-        Vector3 gazeDirection = CenterPosToGazeDir(calib.LinearTransform(ellipseCenter));
+        Vector3 gazeDirection = CenterPosToGazeDir(center);
         if (debugGazeDir)
         {
             gazeDirection = testGazeDir;
