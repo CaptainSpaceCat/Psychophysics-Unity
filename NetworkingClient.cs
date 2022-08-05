@@ -9,7 +9,7 @@ public class NetworkingClient : MonoBehaviour
 {
     private DataSender _sender;
     private GazeListener _listener;
-    public event Action<Vector2, float> OnGazeDataReceived;
+    public event Action<Vector2, float, float> OnGazeDataReceived;
     public event Action<bool> OnCalibrationPointProcessed;
     public PullSocket testClient;
 
@@ -21,13 +21,14 @@ public class NetworkingClient : MonoBehaviour
 
         //_listener = new GazeListener();
         //_listener.OnGazeDataReceived += Pipe;
-        //AsyncIO.ForceDotNet.Force();
-        //testClient = new PullSocket();
-        //testClient.Connect("tcp://localhost:5557");
-        //testClient.SubscribeToAnyTopic();
-        //testClient.ReceiveReady += TestPipe;
 
-        StartCoroutine(FakeThread());
+        AsyncIO.ForceDotNet.Force();
+        testClient = new PullSocket();
+        testClient.Connect("tcp://localhost:5557");
+        //testClient.SubscribeToAnyTopic();
+        testClient.ReceiveReady += TestPipe;
+
+        //StartCoroutine(FakeThread());
     }
 
     private void TestPipe(object sender, NetMQSocketEventArgs e)
@@ -66,7 +67,12 @@ public class NetworkingClient : MonoBehaviour
         string[] split = rawdata.Split(' ');
         Vector2 center = new Vector2(float.Parse(split[0]), float.Parse(split[1]));
         float confidence = float.Parse(split[2]);
-        OnGazeDataReceived(center, confidence);
+        float timestamp = float.Parse(split[3]);
+       
+        float delta = DateTime.Now.Millisecond*1000 - timestamp;
+
+        OnGazeDataReceived(center, confidence, timestamp);
+        Debug.Log("Network delta: " + delta.ToString("F10"));
     }
 
     private void CalibCallback(bool state)
@@ -89,13 +95,6 @@ public class NetworkingClient : MonoBehaviour
 
             for (int i = 0; Running; i++)
             {
-                //Debug.Log("Sending Hello");
-                //client.SendFrame("Hello");
-                // ReceiveFrameString() blocks the thread until you receive the string, but TryReceiveFrameString()
-                // do not block the thread, you can try commenting one and see what the other does, try to reason why
-                // unity freezes when you use ReceiveFrameString() and play and stop the scene without running the server
-                //                string message = client.ReceiveFrameString();
-                //                Debug.Log("Received: " + message);
                 string message = null;
                 bool gotMessage = false;
                 while (Running)

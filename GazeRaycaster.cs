@@ -49,7 +49,7 @@ public class GazeRaycaster : MonoBehaviour
     {
         if (debugGazeDir)
         {
-            CalculateWindowPos(Vector2.zero, 1);
+            //CalculateWindowPos(Vector2.zero, 1);
         }
 
         if (raycastMode > 0)
@@ -67,9 +67,9 @@ public class GazeRaycaster : MonoBehaviour
 
         if (gazeAvailable)
         {
-            savedMut.WaitOne();
-            CalculateWindowPos(savedCenter, savedConfidence);
-            savedMut.ReleaseMutex();
+            //savedMut.WaitOne();
+            //CalculateWindowPos(savedCenter, savedConfidence);
+            //savedMut.ReleaseMutex();
         }
     }
 
@@ -83,10 +83,10 @@ public class GazeRaycaster : MonoBehaviour
     private float savedConfidence;
     private Mutex savedMut;
     public GameObject dummytest;
-    public void ConsumeGazeData(Vector2 center, float confidence)
+    public void ConsumeGazeData(Vector2 center, float confidence, float timestamp)
     {
-        dummytest.transform.localPosition = new Vector3(center.x + 1f, center.y, 2);
-        //CalculateWindowPos(center, confidence);
+        //dummytest.transform.localPosition = new Vector3(center.x + 1f, center.y, 2);
+        CalculateWindowPos(center, confidence, timestamp);
 
         /*
         savedMut.WaitOne();
@@ -99,7 +99,7 @@ public class GazeRaycaster : MonoBehaviour
 
     private float prevFilterTime = 0;
     public int kChosenEye = 0;
-    public void CalculateWindowPos(Vector2 center, float confidence)
+    public void CalculateWindowPos(Vector2 center, float confidence, float timestamp)
     {
         if (raycastMode == 0)// || eyeidx != kChosenEye)
         {
@@ -122,7 +122,7 @@ public class GazeRaycaster : MonoBehaviour
 
         if (raycastMode == 1)
         {
-            FollowMode(gazeDirection);
+            FollowMode(gazeDirection, timestamp);
         } else if (raycastMode == 2)
         {
             //LockedMode(gazeDirection);
@@ -135,7 +135,7 @@ public class GazeRaycaster : MonoBehaviour
         return new Vector3(centerPos.x, centerPos.y, 2); //TODO make this 2 not hardcoded, its based on the distance from the camera to the blocking plane
     }
 
-    private void FollowMode(Vector3 rawGazeDir)
+    private void FollowMode(Vector3 rawGazeDir, float timestamp)
     {
         //sysTime.Log(gazeData.PupilTimestamp.ToString() + "-recieved");
         float filterDeltaTime = Time.time - prevFilterTime;
@@ -191,6 +191,10 @@ public class GazeRaycaster : MonoBehaviour
         }
         prevDataTimestamp = Time.time;
         shader.Rerender(backdropHitTL.textureCoord, backdropHitBR.textureCoord, dotCoords);
+
+        float delta = DateTime.Now.Millisecond * 1000 - timestamp;
+        Debug.Log("Shader delta: " + delta.ToString("F10"));
+
         //sysTime.Log(gazeData.PupilTimestamp.ToString() + "-shaded");
         prevFilterTime = Time.time;
     }
