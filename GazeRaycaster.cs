@@ -39,8 +39,8 @@ public class GazeRaycaster : MonoBehaviour
         gazeFilter = new OneEuroFilter<Vector3>(filterFrequency);
 
         // set event listeners
-        netClient.OnGazeDataReceived += ConsumeGazeData;
-        savedMut = new Mutex();
+        //netClient.OnGazeDataReceived += ConsumeGazeData;
+        //savedMut = new Mutex();
     }
 
     private float prevDataTimestamp;
@@ -83,10 +83,10 @@ public class GazeRaycaster : MonoBehaviour
     private float savedConfidence;
     private Mutex savedMut;
     public GameObject dummytest;
-    public void ConsumeGazeData(Vector2 center, float confidence, float timestamp)
+    public void ConsumeGazeData(CustomGazeData gazeData)
     {
         //dummytest.transform.localPosition = new Vector3(center.x + 1f, center.y, 2);
-        CalculateWindowPos(center, confidence, timestamp);
+        CalculateWindowPos(gazeData);
 
         /*
         savedMut.WaitOne();
@@ -99,16 +99,19 @@ public class GazeRaycaster : MonoBehaviour
 
     private float prevFilterTime = 0;
     public int kChosenEye = 0;
-    public void CalculateWindowPos(Vector2 center, float confidence, float timestamp)
+    public void CalculateWindowPos(CustomGazeData gazeData)
     {
+        float confidence = gazeData.confidence;
+        Vector2 center = gazeData.center;
         if (raycastMode == 0)// || eyeidx != kChosenEye)
         {
             return;
         }
 
-        if (!debugGazeDir && confidence < confidenceThreshold)
+        if (!debugGazeDir && (confidence < confidenceThreshold))// || gazeData.IsStale()))
         {
-            // if we aren't debugging and aren't confident in where the user is looking,
+            // if we aren't debugging
+            // and either aren't confident in where the user is looking, or too much time has passed since the sample was taken,
             // just shut the window entirely to prevent cheating
             //TODO: shut the window if the change between this frame and last frame is too large, should help mitigate oscillations between 2 points
             shader.ShutWindow();
@@ -122,7 +125,10 @@ public class GazeRaycaster : MonoBehaviour
 
         if (raycastMode == 1)
         {
-            FollowMode(gazeDirection, timestamp);
+            FollowMode(gazeDirection, gazeData);
+            gazeData.AddTimestamp(DateTime.Now.Millisecond * 1000);
+            gazeData.DumpTimestamps();
+
         } else if (raycastMode == 2)
         {
             //LockedMode(gazeDirection);
@@ -135,7 +141,7 @@ public class GazeRaycaster : MonoBehaviour
         return new Vector3(centerPos.x, centerPos.y, 2); //TODO make this 2 not hardcoded, its based on the distance from the camera to the blocking plane
     }
 
-    private void FollowMode(Vector3 rawGazeDir, float timestamp)
+    private void FollowMode(Vector3 rawGazeDir, CustomGazeData gazeData)
     {
         //sysTime.Log(gazeData.PupilTimestamp.ToString() + "-recieved");
         float filterDeltaTime = Time.time - prevFilterTime;
@@ -190,10 +196,13 @@ public class GazeRaycaster : MonoBehaviour
             OnRaycastSuccessful(new Vector2(oHit.x, oHit.z), new Vector2(wHit.x, wHit.y), Time.time);
         }
         prevDataTimestamp = Time.time;
-        shader.Rerender(backdropHitTL.textureCoord, backdropHitBR.textureCoord, dotCoords);
-
-        float delta = DateTime.Now.Millisecond * 1000 - timestamp;
-        Debug.Log("Shader delta: " + delta.ToString("F10"));
+        if (gazeData.IsStale())
+        {
+            shader.ShutWindow();
+        } else
+        {
+            shader.Rerender(backdropHitTL.textureCoord, backdropHitBR.textureCoord, dotCoords);
+        }
 
         //sysTime.Log(gazeData.PupilTimestamp.ToString() + "-shaded");
         prevFilterTime = Time.time;

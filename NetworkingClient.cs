@@ -5,11 +5,12 @@ using System;
 using System.Collections;
 using UnityEngine;
 
+
 public class NetworkingClient : MonoBehaviour
 {
     private DataSender _sender;
     private GazeListener _listener;
-    public event Action<Vector2, float, float> OnGazeDataReceived;
+    public event Action<CustomGazeData> OnGazeDataReceived;
     public event Action<bool> OnCalibrationPointProcessed;
     public PullSocket testClient;
 
@@ -67,12 +68,21 @@ public class NetworkingClient : MonoBehaviour
         string[] split = rawdata.Split(' ');
         Vector2 center = new Vector2(float.Parse(split[0]), float.Parse(split[1]));
         float confidence = float.Parse(split[2]);
-        float timestamp = float.Parse(split[3]);
-       
-        float delta = DateTime.Now.Millisecond*1000 - timestamp;
+        int[] timestamps = {
+            int.Parse(split[3]),
+            int.Parse(split[4]),
+            int.Parse(split[5]),
+        };
 
-        OnGazeDataReceived(center, confidence, timestamp);
-        Debug.Log("Network delta: " + delta.ToString("F10"));
+        CustomGazeData gazeData = new CustomGazeData();
+        gazeData.center = center;
+        gazeData.confidence = confidence;
+        for (int i = 0; i < timestamps.Length; i++)
+        {
+            gazeData.AddTimestamp(timestamps[i]);
+        }
+        gazeData.AddTimestamp(DateTime.Now.Millisecond * 1000);
+        OnGazeDataReceived(gazeData);
     }
 
     private void CalibCallback(bool state)
