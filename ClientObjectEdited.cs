@@ -7,6 +7,7 @@ using System;
 using UnityEngine.UI;
 using System.IO;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 public class CustomGazeData
 {
@@ -40,13 +41,14 @@ public class CustomGazeData
 
     public bool IsStale()
     {
+        //return false;
         int now = DateTime.Now.Millisecond * 1000;
         int start = timestamps[0];
         if (now < start)
         {
             now += 1000000;
         }
-        return now - start >= 10000;
+        return now - start >= 15000;
     }
 }
 
@@ -62,7 +64,9 @@ public class NetMQListener
     private readonly MessageDelegate _messageDelegate;
 
     private readonly ConcurrentQueue<string> _messageQueue = new ConcurrentQueue<string>();
-    
+    private CancellationTokenSource Source;
+    private bool CanListen;
+
     // This function runs forever in a separate thread
     // Its only purpose is to pull data from Python and queue it up
     private void ListenerWork()
@@ -79,26 +83,69 @@ public class NetMQListener
                 //byte[] frameBytes;
                 string frameString;
                 if (!subSocket.TryReceiveFrameString(out frameString)) continue;
-                int unity_recieve_timestamp = DateTime.Now.Millisecond*1000;
+                int unity_recieve_timestamp = DateTime.Now.Millisecond * 1000;
                 //we recieve the data from Python and enqueue it into our messageQueue
-                _messageQueue.Enqueue(frameString + ' ' + unity_recieve_timestamp.ToString());
+                AddMessage(frameString + ' ' + unity_recieve_timestamp.ToString());
             }
             subSocket.Close();
         }
         NetMQConfig.Cleanup();
     }
 
-    // This is called within the Update loop of a monobehaviour class that holds this NetMQListener
-    // This is the only function called within that loop, so it should run at the same time that Update() runs on the main thread
-    public void Update()
+    /// <summary>
+    /// Store message and immediately start reading
+    /// </summary>
+    /// <param name="message"></param>
+    private void AddMessage(string message)
     {
-        //by the time we reach this line, it's been 5-30ms since the data came in, which is far too much time
+        _messageQueue.Enqueue(message);
+        if (Source != null)
+        {
+            Source.Cancel();
+        }
+    }
+
+    /// <summary>
+    /// Listen infinitely for any incoming messages and refresh the token
+    /// </summary>
+    async void WaitForInput()
+    {
+        while (CanListen)
+        {
+            if (Source != null)
+                Source.Dispose();
+
+            Source = new CancellationTokenSource();
+            bool tokenCancelled = await Task.Run(() => WaitUntilTokenIsCancelled(Source.Token));
+
+            if (tokenCancelled)
+            {
+                ReadMessages();
+            }
+        }
+    }
+
+    /// <summary>
+    /// Will return true when task has been cancelled, and will block
+    /// background thread till it has
+    /// </summary>
+    /// <param name="token"></param>
+    /// <returns></returns>
+    Task<bool> WaitUntilTokenIsCancelled(CancellationToken token)
+    {
+        return Task.Delay(-1, token)
+                .ContinueWith(tsk => tsk.Exception == default);
+    }
+
+    void ReadMessages()
+    {
         while (!_messageQueue.IsEmpty)
         {
             string message_out;
             if (_messageQueue.TryDequeue(out message_out))
             {
-                // This is hooked up to the rendering code which changes the shader variables to render the square
+                // This is hooked up to the rendering code which changes the shader variables 
+                // to render the square
                 _messageDelegate(message_out);
             }
             else
@@ -117,11 +164,16 @@ public class NetMQListener
     public void Start()
     {
         _listenerCancelled = false;
+        CanListen = true;
+
+        WaitForInput();
         _listenerWorker.Start();
     }
 
     public void Stop()
     {
+        CanListen = false;
+
         _listenerCancelled = true;
         _listenerWorker.Join();
     }
@@ -173,12 +225,7 @@ public class ClientObjectEdited : MonoBehaviour
         _netMqListener = new NetMQListener(HandleMessage);
         _netMqListener.Start();
     }
-
-    private void Update()
-    {
-        _netMqListener.Update();
-    }
-
+    
     private void OnDestroy()
     {
         //_netMqListener.Stop();
